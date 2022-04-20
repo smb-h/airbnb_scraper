@@ -14,16 +14,14 @@ soup = BeautifulSoup(response.text, 'html.parser')
 def get_page(pg_num):
     url = "https://www.airbnb.com/s/Paris--France/homes?refinement_paths%5B%5D=%2Fhomes&current_tab_id=home_tab&selected_tab_id=home_tab&screen_size=large&hide_dates_and_guests_filters=false&place_id=ChIJD7fiBh9u5kcRYJSMaMOCCwQ&s_tag=qFBLGoQ9&search_type=pagination&section_offset=5&items_offset="
     if pg_num > 1:
-        url = url + str(len(homes))
+        url += str(len(homes))
     response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    return soup
+    return BeautifulSoup(response.text, 'html.parser')
 
 
 # Pagination
-pages = []
 active_page_number = int(soup.findAll("div", {"class": "_e602arm"})[0].text.strip())
-pages.append(active_page_number)
+pages = [active_page_number]
 deactive_page_numbers = soup.findAll("div", {"class": "_1bdke5s"})
 for div in deactive_page_numbers:
     tmp = int(div.text.strip())
@@ -38,10 +36,7 @@ for page in range(1, pages+1):
     find_homes = soup.findAll("div", {"class": "_6kiyebe"})
     for home in find_homes:
         children = home.findChildren(recursive=False)
-        children_data = []
-        for child in children:
-            if child.text:
-                children_data.append(child.text)
+        children_data = [child.text for child in children if child.text]
         # print(children_data)
         homes.append(children_data)
 
@@ -55,7 +50,10 @@ cur.execute('CREATE TABLE home_table (name varchar(255), description varchar(255
 for home in homes:
     print(home)
     # QUERY =
-    cur.execute('INSERT INTO home_table (name, description, rating) VALUES ({}, {}, {})'.format(home[1], home[2], home[0]))
+    cur.execute(
+        f'INSERT INTO home_table (name, description, rating) VALUES ({home[1]}, {home[2]}, {home[0]})'
+    )
+
 conn.commit()
 
 
